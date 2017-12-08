@@ -5,20 +5,22 @@ import sys
 
 BLOCK_SIZE = 32
 BLOCK_ROW = 7
-SCREEN_HEIGHT = BLOCK_SIZE * 7
+SCREEN_HEIGHT = BLOCK_SIZE * 9
 SCREEN_WIDTH = BLOCK_SIZE * BLOCK_ROW
 BALL_RADIUS = 4
 BALL_COLOR = (251, 176, 52)
 BLOCK_COLOR = (0, 164, 228)
 BACKGROUND_COLOR = (106, 115, 123)
 PERIOD = 30
-GRAVITY = 0.05
+DISPLAY_UPDATE = 1000
+GRAVITY = 0.01
 
 pygame.init()
 sysfont = pygame.font.Font(
-    "/System/Library/Fonts/AquaKana.ttc", BLOCK_SIZE)
+    "/System/Library/Fonts/AquaKana.ttc", int(BLOCK_SIZE/2))
 
 
+# TODO
 class Player():
     def __init__(self):
         return
@@ -70,7 +72,8 @@ class Ball():
                     self.dy = -self.dy
                     self.y += self.dy
                 # collided to right
-                if old_x > block.x + BLOCK_SIZE and self.x <= block.x + BLOCK_SIZE:
+                if old_x > block.x + BLOCK_SIZE and \
+                        self.x <= block.x + BLOCK_SIZE:
                     number -= 1
                     self.dx = -self.dx + GRAVITY
                     self.x += self.dx
@@ -99,16 +102,23 @@ class Ball():
 
 
 class Block():
-    def __init__(self, number=1, x=0, y=0):
+    def __init__(self, number=1, x=0, y=0, add_ball=False):
         self.number = number
         self.x = x
         self.y = y
+        self.add_ball = add_ball
 
     def draw(self, screen):
-        pygame.draw.rect(screen, BLOCK_COLOR, pygame.Rect(
-            self.x, self.y, BLOCK_SIZE, BLOCK_SIZE))
-        number_text = sysfont.render(str(self.number), True, (0, 0, 0))
-        screen.blit(number_text, (int(self.x), int(self.y)))
+        if self.add_ball:
+            pygame.draw.circle(screen, BLOCK_COLOR,
+                               (int(self.x), int(self.y), BALL_RADIUS))
+            # number_text = sysfont.render(str(self.number), True, (0, 0, 0))
+            # screen.blit(number_text, (int(self.x), int(self.y)))
+        else:
+            pygame.draw.rect(screen, BLOCK_COLOR, pygame.Rect(
+                self.x, self.y, BLOCK_SIZE, BLOCK_SIZE))
+            number_text = sysfont.render(str(self.number), True, (0, 0, 0))
+            screen.blit(number_text, (int(self.x), int(self.y)))
 
     def __repr__(self):
         return "<Block " + ','.join(
@@ -122,20 +132,24 @@ class Game():
         self.ball_nums = ball_nums
         self.difficulty = difficulty
         self.blocks = []
+        self.set_balls(ball_nums, ball_x, ball_y)
+
+    def set_balls(self, ball_nums, ball_x, ball_y):
         self.balls = [Ball(x=ball_x, y=ball_y) for _ in range(ball_nums)]
 
     def generate_blocks(self):
         blocks = []
         for idx in range(BLOCK_ROW):
-            if random.random() > 1 / (self.difficulty + 1):
+            # if random.random() > 1 / (self.difficulty + 1):
+            if random.random() > 1/2:
                 if random.random() > 0.5:
                     blocks.append(Block(number=self.difficulty * 2,
-                                        x=idx * BLOCK_SIZE, y=0))
+                                        x=idx * BLOCK_SIZE, y=BLOCK_SIZE))
                 else:
                     blocks.append(Block(number=self.difficulty,
-                                        x=idx * BLOCK_SIZE, y=0))
+                                        x=idx * BLOCK_SIZE, y=BLOCK_SIZE))
         if len(blocks) == 0:
-            blocks = [Block(number=self.difficulty, x=0, y=0)]
+            blocks = [Block(number=self.difficulty, x=0, y=BLOCK_SIZE)]
         return blocks
 
     def shifted_block(self, block):
@@ -147,6 +161,12 @@ class Game():
             new_blocks.append(self.shifted_block(block))
         new_blocks.extend(self.generate_blocks())
         return new_blocks
+
+    def is_gameover(self):
+        for block in self.blocks:
+            if block.y == BLOCK_ROW * BLOCK_SIZE:
+                return True
+        return False
 
     def play(self, dx=0, dy=-1):
         self.blocks = self.new_blocks(self.blocks)
@@ -163,11 +183,11 @@ class Game():
         self.balls = [ball_ready[0]]
         ball_ready = ball_ready[1:]
 
-        clock = pygame.time.Clock()
         idx = 0
+        display_count = 0
         while True:
+            display_count += 1
             idx += 1
-            clock.tick(60)
             self.screen.fill(BACKGROUND_COLOR)
             if len(ball_ready) > 0 and idx > PERIOD:
                 idx = 0
@@ -179,7 +199,9 @@ class Game():
             for ball in self.balls:
                 ball.draw(self.screen)
 
-            pygame.display.update()
+            if display_count == DISPLAY_UPDATE:
+                pygame.display.update()
+                display_count = 0
 
             old_balls = self.balls
             self.balls = []
@@ -195,17 +217,27 @@ class Game():
                     sys.exit()
 
             if len(self.balls) == 0:
-                print("done")
-                pygame.quit()
-                sys.exit()
+                return
+                # pygame.quit()
+                # sys.exit()
 
 
 def __main__():
-    game = Game(ball_nums=2)
-    rad = 45
-    dx = math.cos(rad)
-    dy = -math.cos(rad)
-    game.play_animation(dx=dx, dy=dy)
+    current_ball_nums = 2
+    game = Game(ball_nums=current_ball_nums)
+    while not game.is_gameover():
+        print(current_ball_nums)
+        rad = math.radians(10)  # degree should be 0 < x < 180
+        dx = math.cos(rad)
+        dy = -math.sin(rad)
+        game.set_balls(current_ball_nums, SCREEN_WIDTH / 2, SCREEN_HEIGHT)
+        game.play_animation(dx=dx, dy=dy)
+        game.difficulty += 1
+        current_ball_nums += 1
+
+    pygame.quit()
+    sys.exit()
+
     return
 
 
