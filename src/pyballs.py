@@ -4,7 +4,7 @@ import math
 import sys
 
 BLOCK_SIZE = 32
-BLOCK_CORNER_RADIUS = 4
+BLOCK_CORNER_RADIUS = 6
 BLOCK_ROW = 7
 SCREEN_HEIGHT = BLOCK_SIZE * 9
 SCREEN_WIDTH = BLOCK_SIZE * BLOCK_ROW
@@ -14,7 +14,7 @@ BLOCK_COLOR = (0, 164, 228)
 DEBUG_COLOR = (0, 0, 0)
 BACKGROUND_COLOR = (106, 115, 123)
 PERIOD = 30
-DISPLAY_UPDATE = 32  # 1000
+DISPLAY_UPDATE = 8  # 1000
 GRAVITY = 0.01
 
 
@@ -58,59 +58,92 @@ class Ball():
         if self.x < 0 or SCREEN_WIDTH <= self.x:
             self.dx = -self.dx
             self.dy += GRAVITY
-            self.x += self.dx
+            # self.x += self.dx
         # collided to bottom
         if SCREEN_HEIGHT <= self.y:
             return None
         if self.y < 0:
             self.dy = -self.dy
-            self.y += self.dy
+            # self.y += self.dy
 
         # collided to blocks
         new_blocks = []
         for block in blocks:
             number = block.number
             if number > 0 and self.collided_to_block(block):
-                alpha = math.atan2(self.y, self.x)
                 # possibility of colliding to bottom right
-                # TODO
+                corner = False
                 if block.x + BLOCK_SIZE - BLOCK_CORNER_RADIUS <= self.x and \
                         self.x <= block.x + BLOCK_SIZE and \
                         block.y + BLOCK_SIZE - BLOCK_CORNER_RADIUS <= self.y and \
                         self.y <= block.y + BLOCK_SIZE:
-                    # theta = math.atan2()
+                    corner = True
+                    alpha = math.atan2(self.y - (block.y +
+                                                 BLOCK_SIZE - BLOCK_CORNER_RADIUS),
+                                       self.x - (block.x + BLOCK_SIZE - BLOCK_CORNER_RADIUS))
+                    theta = math.atan2(self.dy, self.dx)
+                    new_theta = math.pi + 2 * alpha - theta
+                    self.dx = math.cos(new_theta)
+                    self.dy = math.sin(new_theta)
                     number -= 1
                 # possibility of colliding to bottom left
-                if False:
+                if block.x <= self.x and self.x <= block.x + BLOCK_CORNER_RADIUS and \
+                        block.y + BLOCK_SIZE - BLOCK_CORNER_RADIUS <= self.y and \
+                        self.y <= block.y + BLOCK_SIZE:
+                    corner = True
+                    alpha = math.atan2(self.y - (block.y +
+                                                 BLOCK_SIZE - BLOCK_CORNER_RADIUS),
+                                       self.x - (block.x + BLOCK_CORNER_RADIUS))
+                    theta = -math.atan2(self.dy, self.dx)
+                    new_theta = math.pi + 2 * alpha - theta
+                    self.dx = math.cos(new_theta)
+                    self.dy = math.sin(new_theta)
                     number -= 1
                 # possibility of colliding to top right
-                if False:
+                if block.x + BLOCK_SIZE - BLOCK_CORNER_RADIUS <= self.x and \
+                        self.x <= block.x + BLOCK_SIZE and \
+                        block.y <= self.y and \
+                        self.y <= block.y + BLOCK_CORNER_RADIUS:
+                    corner = True
+                    alpha = math.atan2(self.y - (block.y +
+                                                 BLOCK_SIZE - BLOCK_CORNER_RADIUS),
+                                       self.x - (block.x + BLOCK_CORNER_RADIUS))
+                    theta = math.atan2(self.dy, self.dx)
+                    new_theta = math.pi + 2 * alpha - theta
+                    self.dx = math.cos(new_theta)
+                    self.dy = math.sin(new_theta)
                     number -= 1
                 # possibility of colliding to top left
-                if False:
+                if block.x <= self.x and self.x <= block.x + BLOCK_CORNER_RADIUS and \
+                        block.y <= self.y and \
+                        self.y <= block.y + BLOCK_CORNER_RADIUS:
+                    corner = True
+                    alpha = math.atan2(self.y - (block.y +
+                                                 BLOCK_SIZE - BLOCK_CORNER_RADIUS),
+                                       self.x - (block.x + BLOCK_CORNER_RADIUS))
+                    theta = -math.atan2(self.dy, self.dx)
+                    new_theta = math.pi + 2 * alpha - theta
+                    self.dx = math.cos(new_theta)
+                    self.dy = math.sin(new_theta)
                     number -= 1
                 # collided to bottom
                 if self.old_y >= block.y + BLOCK_SIZE \
-                        and block.y + BLOCK_SIZE > self.y:
+                        and block.y + BLOCK_SIZE > self.y and not corner:
                     number -= 1
                     self.dy = -self.dy
-                    self.y += self.dy
                 # collided to top
-                if self.old_y < block.y and self.y >= block.y:
+                if self.old_y < block.y and self.y >= block.y and not corner:
                     number -= 1
                     self.dy = -self.dy
-                    self.y += self.dy
                 # collided to right
                 if self.old_x > block.x + BLOCK_SIZE and \
-                        self.x <= block.x + BLOCK_SIZE:
+                        self.x <= block.x + BLOCK_SIZE and not corner:
                     number -= 1
                     self.dx = -self.dx + GRAVITY
-                    self.x += self.dx
                 # collided to left
-                if self.old_x < block.x and self.x >= block.x:
+                if self.old_x < block.x and self.x >= block.x and not corner:
                     number -= 1
-                    self.dx = -self.dx
-                    self.x += self.dx + GRAVITY
+                    self.dx = -self.dx + GRAVITY
             if number > 0:
                 new_blocks.append(
                     Block(number=number, x=block.x, y=block.y))
