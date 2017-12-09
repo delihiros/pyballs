@@ -4,20 +4,23 @@ import math
 import sys
 
 BLOCK_SIZE = 32
+BLOCK_CORNER_RADIUS = 4
 BLOCK_ROW = 7
 SCREEN_HEIGHT = BLOCK_SIZE * 9
 SCREEN_WIDTH = BLOCK_SIZE * BLOCK_ROW
 BALL_RADIUS = 4
 BALL_COLOR = (251, 176, 52)
 BLOCK_COLOR = (0, 164, 228)
+DEBUG_COLOR = (0, 0, 0)
 BACKGROUND_COLOR = (106, 115, 123)
 PERIOD = 30
-DISPLAY_UPDATE = 1000
+DISPLAY_UPDATE = 32  # 1000
 GRAVITY = 0.01
+
 
 pygame.init()
 sysfont = pygame.font.Font(
-    "/System/Library/Fonts/AquaKana.ttc", int(BLOCK_SIZE/2))
+    "/System/Library/Fonts/AquaKana.ttc", int(BLOCK_SIZE / 2))
 
 
 # TODO
@@ -31,14 +34,22 @@ class Player():
 
 class Ball():
     def __init__(self, x=SCREEN_WIDTH, y=SCREEN_HEIGHT, dx=0, dy=0):
+        self.old_x = x
+        self.old_y = y
         self.x = x
         self.y = y
         self.dx = dx
         self.dy = dy
 
+    def is_colliding(self, block):
+        return
+
+    def collide_from(self):
+        return
+
     def update(self, blocks):
-        old_x = self.x
-        old_y = self.y
+        self.old_x = self.x
+        self.old_y = self.y
         self.x += self.dx
         self.y += self.dy
 
@@ -60,25 +71,43 @@ class Ball():
         for block in blocks:
             number = block.number
             if number > 0 and self.collided_to_block(block):
+                alpha = math.atan2(self.y, self.x)
+                # possibility of colliding to bottom right
+                # TODO
+                if block.x + BLOCK_SIZE - BLOCK_CORNER_RADIUS <= self.x and \
+                        self.x <= block.x + BLOCK_SIZE and \
+                        block.y + BLOCK_SIZE - BLOCK_CORNER_RADIUS <= self.y and \
+                        self.y <= block.y + BLOCK_SIZE:
+                    # theta = math.atan2()
+                    number -= 1
+                # possibility of colliding to bottom left
+                if False:
+                    number -= 1
+                # possibility of colliding to top right
+                if False:
+                    number -= 1
+                # possibility of colliding to top left
+                if False:
+                    number -= 1
                 # collided to bottom
-                if old_y >= block.y + BLOCK_SIZE \
+                if self.old_y >= block.y + BLOCK_SIZE \
                         and block.y + BLOCK_SIZE > self.y:
                     number -= 1
                     self.dy = -self.dy
                     self.y += self.dy
                 # collided to top
-                if old_y < block.y and self.y >= block.y:
+                if self.old_y < block.y and self.y >= block.y:
                     number -= 1
                     self.dy = -self.dy
                     self.y += self.dy
                 # collided to right
-                if old_x > block.x + BLOCK_SIZE and \
+                if self.old_x > block.x + BLOCK_SIZE and \
                         self.x <= block.x + BLOCK_SIZE:
                     number -= 1
                     self.dx = -self.dx + GRAVITY
                     self.x += self.dx
                 # collided to left
-                if old_x < block.x and self.x >= block.x:
+                if self.old_x < block.x and self.x >= block.x:
                     number -= 1
                     self.dx = -self.dx
                     self.x += self.dx + GRAVITY
@@ -115,8 +144,61 @@ class Block():
             # number_text = sysfont.render(str(self.number), True, (0, 0, 0))
             # screen.blit(number_text, (int(self.x), int(self.y)))
         else:
+            # draw center
             pygame.draw.rect(screen, BLOCK_COLOR, pygame.Rect(
-                self.x, self.y, BLOCK_SIZE, BLOCK_SIZE))
+                self.x + BLOCK_CORNER_RADIUS,
+                self.y + BLOCK_CORNER_RADIUS,
+                BLOCK_SIZE - 2 * BLOCK_CORNER_RADIUS,
+                BLOCK_SIZE - 2 * BLOCK_CORNER_RADIUS))
+            # draw left
+            pygame.draw.rect(screen, BLOCK_COLOR, pygame.Rect(
+                self.x,
+                self.y + BLOCK_CORNER_RADIUS,
+                BLOCK_CORNER_RADIUS,
+                BLOCK_SIZE - 2 * BLOCK_CORNER_RADIUS
+            ))
+            # draw right
+            pygame.draw.rect(screen, BLOCK_COLOR, pygame.Rect(
+                self.x + BLOCK_SIZE - BLOCK_CORNER_RADIUS,
+                self.y + BLOCK_CORNER_RADIUS,
+                BLOCK_CORNER_RADIUS,
+                BLOCK_SIZE - 2 * BLOCK_CORNER_RADIUS
+            ))
+            # draw top
+            pygame.draw.rect(screen, BLOCK_COLOR, pygame.Rect(
+                self.x + BLOCK_CORNER_RADIUS,
+                self.y,
+                BLOCK_SIZE - 2 * BLOCK_CORNER_RADIUS,
+                BLOCK_CORNER_RADIUS
+            ))
+            # draw bottom
+            pygame.draw.rect(screen, BLOCK_COLOR, pygame.Rect(
+                self.x + BLOCK_CORNER_RADIUS,
+                self.y + BLOCK_SIZE - BLOCK_CORNER_RADIUS,
+                BLOCK_SIZE - 2 * BLOCK_CORNER_RADIUS,
+                BLOCK_CORNER_RADIUS
+            ))
+            # draw bottom right
+            pygame.draw.circle(screen, BLOCK_COLOR,
+                               (self.x + BLOCK_SIZE - BLOCK_CORNER_RADIUS,
+                                self.y + BLOCK_SIZE - BLOCK_CORNER_RADIUS),
+                               BLOCK_CORNER_RADIUS)
+            # draw bottom left
+            pygame.draw.circle(screen, BLOCK_COLOR,
+                               (self.x + BLOCK_CORNER_RADIUS,
+                                self.y + BLOCK_SIZE - BLOCK_CORNER_RADIUS),
+                               BLOCK_CORNER_RADIUS)
+            # draw top right
+            pygame.draw.circle(screen, BLOCK_COLOR,
+                               (self.x + BLOCK_SIZE - BLOCK_CORNER_RADIUS,
+                                self.y + BLOCK_CORNER_RADIUS),
+                               BLOCK_CORNER_RADIUS)
+            # draw top left
+            pygame.draw.circle(screen, BLOCK_COLOR,
+                               (self.x + BLOCK_CORNER_RADIUS,
+                                self.y + BLOCK_CORNER_RADIUS),
+                               BLOCK_CORNER_RADIUS)
+
             number_text = sysfont.render(str(self.number), True, (0, 0, 0))
             screen.blit(number_text, (int(self.x), int(self.y)))
 
@@ -140,8 +222,7 @@ class Game():
     def generate_blocks(self):
         blocks = []
         for idx in range(BLOCK_ROW):
-            # if random.random() > 1 / (self.difficulty + 1):
-            if random.random() > 1/2:
+            if random.random() > 1 / 2:
                 if random.random() > 0.5:
                     blocks.append(Block(number=self.difficulty * 2,
                                         x=idx * BLOCK_SIZE, y=BLOCK_SIZE))
